@@ -2,4 +2,7 @@
 
 namespace FCG_Games.Domain.Interfaces.Repositories;
 
-public interface IPromotionRepository : IBaseRepository<Promotion>;
+public interface IPromotionRepository : IBaseRepository<Promotion>
+{
+	Task<ICollection<Promotion>> GetAllActive();
+}
