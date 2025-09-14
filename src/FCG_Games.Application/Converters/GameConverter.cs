@@ -1,0 +1,31 @@
+﻿using FCG_Games.Domain.DTO;
+using FCG_Games.Domain.Entities;
+
+namespace FCG_Games.Application.Converters;
+
+public static class GameConverter
+{
+	public static Game ToEntity(this CreateGameDto dto)
+		=> new()
+		{
+			Title = dto.Title,
+			Price = dto.Price,
+			ReleaseDate = dto.ReleaseDate,
+			UserGames = []
+		};
+
+	public static Game ToEntity(this UpdateGameDto dto, Game game)
+	{
+		game.Title = dto.Title;
+		game.Price = dto.Price;
+		game.ReleaseDate = dto.ReleaseDate;
+
+		return game;
+	}
+
+	public static GameDto ToDto(this Game game)
+		=> new(game.Id, game.Title, game.Price, game.ReleaseDate);
+
+	public static List<GameDto> ToDtoList(this IEnumerable<Game> games)
+		=> [.. games.Select(g => g.ToDto())];
+}
