@@ -1,6 +1,4 @@
-﻿using FCG_Common.Domain.Entities;
-
-namespace FCG_Games.Domain.Entities;
+﻿namespace FCG_Games.Domain.Entities;
 
 public class UserGame : BaseEntity
 {
