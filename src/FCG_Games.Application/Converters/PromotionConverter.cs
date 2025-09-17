@@ -27,5 +27,6 @@ public static class PromotionConverter
 	public static PromotionDto ToDto(this Promotion promotion, GameDto gameDto)
 		=> new(promotion.Id, gameDto, promotion.DiscountPercentage, promotion.Deadline, promotion.Active);
 
-
+	public static List<PromotionDto> ToDtoList(this IEnumerable<Promotion> promotions)
+		=> [.. promotions.Select(p => p.ToDto(p.Game!.ToDto()))];
 }

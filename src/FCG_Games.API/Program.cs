@@ -1,0 +1,37 @@
+using FCG_Games.API.Config;
+using FCG_Games.API.Middlewares;
+using FCG_Games.Application;
+using FCG_Games.Infrastructure;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.ConfigureSwagger();
+
+builder.Services.AddExceptionHandler<ExceptionHandlingMiddleware>();
+
+builder.Services.AddApplicationServices();
+builder.Services.AddInfrastructureServices(builder.Configuration);
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+	app.UseSwagger();
+	app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseMiddleware<LoggingMiddleware>();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+await app.RunAsync();

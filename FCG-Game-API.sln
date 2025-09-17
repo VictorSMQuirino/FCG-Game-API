@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FCG_Games.Infrastructure", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FCG_Games.Application", "src\FCG_Games.Application\FCG_Games.Application.csproj", "{07E8E532-5997-4CB6-8D6A-B2DF2C4F2E82}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FCG_Games.API", "src\FCG_Games.API\FCG_Games.API.csproj", "{D90F1FD7-AB83-46E3-BE2C-46CEA0A9BBBB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{07E8E532-5997-4CB6-8D6A-B2DF2C4F2E82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{07E8E532-5997-4CB6-8D6A-B2DF2C4F2E82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{07E8E532-5997-4CB6-8D6A-B2DF2C4F2E82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D90F1FD7-AB83-46E3-BE2C-46CEA0A9BBBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D90F1FD7-AB83-46E3-BE2C-46CEA0A9BBBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D90F1FD7-AB83-46E3-BE2C-46CEA0A9BBBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D90F1FD7-AB83-46E3-BE2C-46CEA0A9BBBB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -37,6 +43,7 @@ Global
 		{9D8922FB-FF84-4FAC-BF7F-FDEB856D95C1} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{5FD25E2C-158F-4287-BE0C-A2E0359235E5} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{07E8E532-5997-4CB6-8D6A-B2DF2C4F2E82} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{D90F1FD7-AB83-46E3-BE2C-46CEA0A9BBBB} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7793C35C-4911-4F7C-8B40-20190E95BC8D}
