@@ -10,6 +10,9 @@ public static class GameConverter
 		{
 			Title = dto.Title,
 			Price = dto.Price,
+			Description = dto.Description,
+			Developer = dto.Developer,
+			Publisher = dto.Publisher,
 			ReleaseDate = dto.ReleaseDate,
 			UserGames = []
 		};
@@ -17,6 +20,9 @@ public static class GameConverter
 	public static Game ToEntity(this UpdateGameDto dto, Game game)
 	{
 		game.Title = dto.Title;
+		game.Description = dto.Description;
+		game.Developer = dto.Developer;
+		game.Publisher = dto.Publisher;
 		game.Price = dto.Price;
 		game.ReleaseDate = dto.ReleaseDate;
 
@@ -24,7 +30,7 @@ public static class GameConverter
 	}
 
 	public static GameDto ToDto(this Game game)
-		=> new(game.Id, game.Title, game.Price, game.ReleaseDate);
+		=> new(game.Id, game.Title, game.Description, game.Developer, game.Publisher, game.Price, game.ReleaseDate);
 
 	public static List<GameDto> ToDtoList(this IEnumerable<Game> games)
 		=> [.. games.Select(g => g.ToDto())];

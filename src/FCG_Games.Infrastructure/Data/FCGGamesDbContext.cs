@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FCG_Games.Infrastructure.Data;
 
-public class FCGGamesDbContext : DbContext
+public class FCGGamesDbContext(DbContextOptions<FCGGamesDbContext> options) : DbContext(options)
 {
 	public DbSet<Game> Games { get; set; }
 	public DbSet<Promotion> Promotions { get; set; }
