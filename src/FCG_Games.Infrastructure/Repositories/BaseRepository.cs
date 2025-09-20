@@ -2,6 +2,7 @@
 using FCG_Games.Domain.Interfaces.Repositories;
 using FCG_Games.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 
 namespace FCG_Games.Infrastructure.Repositories;
@@ -76,4 +77,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 
 	public async Task<bool> ExistsBy(Expression<Func<T, bool>> predicate)
 		=> await _dbSet.AnyAsync(predicate);
+
+	public async Task<IDbContextTransaction> BeginTransaction()
+		=> await _context.Database.BeginTransactionAsync();
 }

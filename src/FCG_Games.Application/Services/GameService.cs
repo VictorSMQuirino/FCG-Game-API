@@ -1,21 +1,29 @@
-﻿using FCG_Games.Application.Converters;
+﻿using Elastic.Clients.Elasticsearch;
+using FCG_Games.Application.Converters;
 using FCG_Games.Application.Validators.Game;
 using FCG_Games.Domain.DTO;
+using FCG_Games.Domain.ElasticsearchDocuments;
 using FCG_Games.Domain.Entities;
+using FCG_Games.Domain.Enums;
 using FCG_Games.Domain.Exceptions;
 using FCG_Games.Domain.Extensions;
 using FCG_Games.Domain.Interfaces.Repositories;
 using FCG_Games.Domain.Interfaces.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace FCG_Games.Application.Services;
 
 public class GameService : IGameService
 {
 	private readonly IGameRepository _gameRepository;
+	private readonly ElasticsearchClient _elasticClient;
+	private readonly IConfiguration _configuration;
 
-	public GameService(IGameRepository gameRepository)
+	public GameService(IGameRepository gameRepository, ElasticsearchClient elasticClient, IConfiguration configuration)
 	{
 		_gameRepository = gameRepository;
+		_elasticClient = elasticClient;
+		_configuration = configuration;
 	}
 
 	public async Task<Guid> CreateAsync(CreateGameDto dto)
@@ -30,9 +38,27 @@ public class GameService : IGameService
 
 		var newGame = dto.ToEntity();
 
-		await _gameRepository.CreateAsync(newGame);
+		using var transaction = await _gameRepository.BeginTransaction();
 
-		return newGame.Id;
+		try
+		{
+			await _gameRepository.CreateAsync(newGame);
+
+			var gameDocument = newGame.ToElasticsearchDocument();
+
+			var response = await _elasticClient.IndexAsync(gameDocument, idx => idx.Index(_configuration["Elasticsearch:Index"]!).Id(gameDocument.Id));
+
+			if (!response.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Index, $"{_configuration["Elasticsearch:Index"]}", $"{gameDocument.Id}");
+
+			await transaction.CommitAsync();
+
+			return newGame.Id;
+		}
+		catch(Exception)
+		{
+			await transaction.RollbackAsync();
+			throw;
+		}
 	}
 
 	public async Task UpdateAsync(Guid id, UpdateGameDto dto)

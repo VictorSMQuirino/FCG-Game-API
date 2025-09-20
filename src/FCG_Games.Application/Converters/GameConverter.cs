@@ -1,4 +1,5 @@
 ﻿using FCG_Games.Domain.DTO;
+using FCG_Games.Domain.ElasticsearchDocuments;
 using FCG_Games.Domain.Entities;
 
 namespace FCG_Games.Application.Converters;
@@ -34,4 +35,15 @@ public static class GameConverter
 
 	public static List<GameDto> ToDtoList(this IEnumerable<Game> games)
 		=> [.. games.Select(g => g.ToDto())];
+
+	public static GameDocument ToElasticsearchDocument(this Game game)
+		=> new()
+		{
+			Id = game.Id,
+			Title = game.Title,
+			Description = game.Description,
+			Developer = game.Developer,
+			Publisher = game.Publisher,
+			ReleaseDate = game.ReleaseDate
+		};
 }

@@ -5,5 +5,6 @@ public enum ErrorCode
 	ValidationError,
 	NotFoundError,
 	DomainError,
+	InfrastructureError,
 	UnexpectedError
 }

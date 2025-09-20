@@ -1,4 +1,5 @@
 ﻿using FCG_Games.Domain.Entities;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 
 namespace FCG_Games.Domain.Interfaces.Repositories;
@@ -16,4 +17,5 @@ public interface IBaseRepository<T> where T : BaseEntity
 	Task DeleteAsync(T entity);
 	Task<bool> ExistsBy(Expression<Func<T, bool>> predicate);
 	Task<T?> GetBy(Expression<Func<T, bool>> predicate);
+	Task<IDbContextTransaction> BeginTransaction();
 }

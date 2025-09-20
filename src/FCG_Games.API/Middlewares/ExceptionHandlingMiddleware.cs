@@ -33,6 +33,7 @@ public class ExceptionHandlingMiddleware : IExceptionHandler
 				DomainException ex => new { ex.EntityName, ex.PropertyName, ex.AttemptedValue },
 				ValidationErrorsException ex => ex.Errors,
 				NotFoundException ex => new { ex.EntityName, ex.Key },
+				ElasticsearchException ex => new { ex.Operation, ex.IndexName, ex.DocumentId },
 				_ => null
 			};
 

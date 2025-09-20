@@ -11,7 +11,7 @@ public class CreateGameValidator : AbstractValidator<CreateGameDto>
 		RuleFor(dto => dto.Title)
 			.NotEmpty().WithMessage("Title is required.");
 		RuleFor(dto => dto.Price)
-			.NotEmpty().WithMessage("Price is reqeuired.")
+			.NotEmpty().WithMessage("Price is required.")
 			.GreaterThanOrEqualTo(0).WithMessage("Price must be greater than or equal to 0.");
 		RuleFor(dto => dto.ReleaseDate)
 			.NotEmpty().WithMessage("ReleaseDate is required")
