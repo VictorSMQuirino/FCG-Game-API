@@ -26,6 +26,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 
 	public async Task UpdateAsync(T entity)
 	{
+		entity.UpdatedAt = DateTime.UtcNow;
 		_dbSet.Update(entity);
 		await _context.SaveChangesAsync();
 	}

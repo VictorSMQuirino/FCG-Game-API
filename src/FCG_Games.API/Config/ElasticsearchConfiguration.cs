@@ -8,7 +8,7 @@ public static class ElasticsearchConfiguration
 	public static IServiceCollection AddElasticsearch(this IServiceCollection services, IConfiguration configuration)
 	{
 		var settings = new ElasticsearchClientSettings(new Uri(configuration["Elasticsearch:Uri"]!))
-			.Authentication(new BasicAuthentication(configuration["Elasticsearch:Username"]!, configuration["Elasticsearch:Password"]!))
+			.Authentication(new ApiKey(configuration["Elasticsearch:ApiKey"]!))
 			.ServerCertificateValidationCallback((sender, certificate, chain, sslPolicyErrors) => true)
 			.DefaultIndex(configuration["Elasticsearch:Index"]!);
 

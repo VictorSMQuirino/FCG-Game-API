@@ -2,7 +2,6 @@
 using FCG_Games.Application.Converters;
 using FCG_Games.Application.Validators.Game;
 using FCG_Games.Domain.DTO;
-using FCG_Games.Domain.ElasticsearchDocuments;
 using FCG_Games.Domain.Entities;
 using FCG_Games.Domain.Enums;
 using FCG_Games.Domain.Exceptions;
@@ -73,8 +72,26 @@ public class GameService : IGameService
 		if (await _gameRepository.ExistsBy(gameInDb => gameInDb.Title.ToUpper().Equals(dto.Title.ToUpper()) && gameInDb.Id != game.Id))
 			throw new DuplicatedEntityException(nameof(Game), nameof(Game.Title), dto.Title);
 
-		game = dto.ToEntity(game);
-		await _gameRepository.UpdateAsync(game);
+		var transaction = await _gameRepository.BeginTransaction();
+
+		try
+		{
+			game = dto.ToEntity(game);
+			await _gameRepository.UpdateAsync(game);
+
+			var gameDocument = game.ToElasticsearchDocument();
+
+			var elasticResponse = await _elasticClient.IndexAsync(gameDocument, idx => idx.Index(_configuration["Elasticsearch:Index"]!).Id(gameDocument.Id));
+
+			if (!elasticResponse.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Index, $"{_configuration["Elasticsearch:Index"]}", $"{gameDocument.Id}");
+
+			await transaction.CommitAsync();
+		}
+		catch (Exception ex)
+		{
+			await transaction.RollbackAsync();
+			throw;
+		}
 	}
 
 	public async Task DeleteAsync(Guid id)
