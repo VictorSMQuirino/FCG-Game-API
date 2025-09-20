@@ -1,6 +1,8 @@
 ﻿using FCG_Games.API.Extensions.Converters;
 using FCG_Games.API.Requests.Game;
 using FCG_Games.API.Responses.Game;
+using FCG_Games.Domain.DTO.Elasticsearch;
+using FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
 using FCG_Games.Domain.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -62,5 +64,14 @@ public class GameController : ControllerBase
 		var dtoList = await _gameService.GetAllAsync();
 
 		return Ok(dtoList.ToResponse());
+	}
+
+	[AllowAnonymous]
+	[HttpGet("search")]
+	public async Task<ActionResult<ICollection<GameDocument>>> SearchGames([FromQuery] ElasticsearchQueryParameters elasticsearchQueryParameters)
+	{
+		var gameDocuments = await _gameService.Search(elasticsearchQueryParameters);
+
+		return Ok(gameDocuments);
 	}
 }

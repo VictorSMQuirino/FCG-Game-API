@@ -1,5 +1,5 @@
 ﻿using FCG_Games.Domain.DTO;
-using FCG_Games.Domain.ElasticsearchDocuments;
+using FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
 using FCG_Games.Domain.Entities;
 
 namespace FCG_Games.Application.Converters;

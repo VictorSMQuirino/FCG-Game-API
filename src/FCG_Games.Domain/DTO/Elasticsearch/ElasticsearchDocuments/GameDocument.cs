@@ -1,4 +1,4 @@
-﻿namespace FCG_Games.Domain.ElasticsearchDocuments;
+﻿namespace FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
 
 public class GameDocument
 {

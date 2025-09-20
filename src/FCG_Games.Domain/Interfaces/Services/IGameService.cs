@@ -1,4 +1,6 @@
 ﻿using FCG_Games.Domain.DTO;
+using FCG_Games.Domain.DTO.Elasticsearch;
+using FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
 
 namespace FCG_Games.Domain.Interfaces.Services;
 
@@ -9,4 +11,5 @@ public interface IGameService
 	Task DeleteAsync(Guid id);
 	Task<GameDto?> GetByIdAsync(Guid id);
 	Task<ICollection<GameDto>> GetAllAsync();
+	Task<ICollection<GameDocument>> Search(ElasticsearchQueryParameters elasticsearchQueryParameters);
 }

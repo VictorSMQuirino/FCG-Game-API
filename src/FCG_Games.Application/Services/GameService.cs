@@ -1,7 +1,10 @@
 ﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using FCG_Games.Application.Converters;
 using FCG_Games.Application.Validators.Game;
 using FCG_Games.Domain.DTO;
+using FCG_Games.Domain.DTO.Elasticsearch;
+using FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
 using FCG_Games.Domain.Entities;
 using FCG_Games.Domain.Enums;
 using FCG_Games.Domain.Exceptions;
@@ -9,6 +12,7 @@ using FCG_Games.Domain.Extensions;
 using FCG_Games.Domain.Interfaces.Repositories;
 using FCG_Games.Domain.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
+using System.Reflection;
 
 namespace FCG_Games.Application.Services;
 
@@ -113,5 +117,27 @@ public class GameService : IGameService
 		var games = await _gameRepository.GetAllAsync();
 
 		return games.ToDtoList();
+	}
+
+	public async Task<ICollection<GameDocument>> Search(ElasticsearchQueryParameters elasticsearchQueryParameters)
+	{
+		var index = _configuration["Elasticsearch:Index"];
+
+		var response = await _elasticClient.SearchAsync<GameDocument>(s => s
+			.Indices(index!)
+			.From(elasticsearchQueryParameters.StartDocumentPosition)
+			.Size(elasticsearchQueryParameters.Size)
+			.Query(q => 
+				q.MultiMatch(mm => mm
+					.Query(elasticsearchQueryParameters.Term)
+					.Type(TextQueryType.BoolPrefix)
+					.Fields(nameof(GameDocument.Title).ToLower())
+					)
+				)
+			);
+
+		if (!response.IsValidResponse) throw new ElasticsearchException(ElasticsearchOperation.Search, index);
+
+		return [.. response.Documents];
 	}
 }
