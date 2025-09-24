@@ -31,7 +31,7 @@ public static class GameConverter
 	}
 
 	public static GameDto ToDto(this Game game)
-		=> new(game.Id, game.Title, game.Description, game.Developer, game.Publisher, game.Price, game.ReleaseDate);
+		=> new(game.Id, game.Title, game.Description, game.Developer, game.Publisher, game.Price, game.ReleaseDate, game.Genres);
 
 	public static List<GameDto> ToDtoList(this IEnumerable<Game> games)
 		=> [.. games.Select(g => g.ToDto())];

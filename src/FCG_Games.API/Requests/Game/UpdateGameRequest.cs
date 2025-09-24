@@ -1,3 +1,5 @@
-﻿namespace FCG_Games.API.Requests.Game;
+﻿using FCG_Games.Domain.Enums;
 
-public record UpdateGameRequest(string Title, string? Description, string Developer, string Publisher, decimal Price, DateOnly ReleaseDate);
+namespace FCG_Games.API.Requests.Game;
+
+public record UpdateGameRequest(string Title, string? Description, string Developer, string Publisher, decimal Price, DateOnly ReleaseDate, ICollection<Genre> Genres);

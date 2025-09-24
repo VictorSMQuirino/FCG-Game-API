@@ -1,5 +1,6 @@
 ﻿using FCG_Games.API.Extensions.Converters;
 using FCG_Games.API.Requests.Game;
+using FCG_Games.API.Responses;
 using FCG_Games.API.Responses.Game;
 using FCG_Games.Domain.DTO.Elasticsearch;
 using FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
@@ -20,6 +21,8 @@ public class GameController : ControllerBase
 		_gameService = gameService;
 	}
 
+	[ProducesResponseType(StatusCodes.Status201Created)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
 	[HttpPost]
 	public async Task<ActionResult> Create(CreateGameRequest request)
 	{
@@ -30,6 +33,9 @@ public class GameController : ControllerBase
 		return CreatedAtAction(nameof(GetById), new { id }, id);
 	}
 
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
 	[HttpPut("{id:guid}")]
 	public async Task<ActionResult> Update(Guid id, [FromBody] UpdateGameRequest request)
 	{
@@ -40,6 +46,9 @@ public class GameController : ControllerBase
 		return NoContent();
 	}
 
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
 	[HttpDelete("{id:guid}")]
 	public async Task<ActionResult> Delete(Guid id)
 	{
@@ -49,6 +58,8 @@ public class GameController : ControllerBase
 	}
 
 	[AllowAnonymous]
+	[ProducesResponseType(typeof(GetGameByIdResponse), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 	[HttpGet("{id:guid}")]
 	public async Task<ActionResult<GetGameByIdResponse>> GetById(Guid id)
 	{
@@ -58,6 +69,7 @@ public class GameController : ControllerBase
 	}
 
 	[AllowAnonymous]
+	[ProducesResponseType(typeof(ICollection<GetGameByIdResponse>), StatusCodes.Status200OK)]
 	[HttpGet]
 	public async Task<ActionResult<ICollection<GetGameByIdResponse>>> GetAll()
 	{
@@ -67,6 +79,7 @@ public class GameController : ControllerBase
 	}
 
 	[AllowAnonymous]
+	[ProducesResponseType(typeof(ICollection<GameDocument>), StatusCodes.Status200OK)]
 	[HttpGet("search")]
 	public async Task<ActionResult<ICollection<GameDocument>>> SearchGames([FromQuery] ElasticsearchQueryParameters elasticsearchQueryParameters)
 	{

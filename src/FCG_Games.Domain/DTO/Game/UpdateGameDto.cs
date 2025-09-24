@@ -1,3 +1,5 @@
-﻿namespace FCG_Games.Domain.DTO;
+﻿using FCG_Games.Domain.Enums;
 
-public record UpdateGameDto(string Title, string? Description, string Developer, string Publisher, decimal Price, DateOnly ReleaseDate);
+namespace FCG_Games.Domain.DTO;
+
+public record UpdateGameDto(string Title, string? Description, string Developer, string Publisher, decimal Price, DateOnly ReleaseDate, ICollection<Genre> Genres);
