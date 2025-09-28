@@ -11,5 +11,5 @@ public class Game : BaseEntity
 	public required decimal Price { get; set; }
 	public required DateOnly ReleaseDate { get; set; }
 	public ICollection<UserGame> UserGames { get; set; } = [];
-	public ICollection<Genre> Genres { get; set; } = [];
+	public List<Genre> Genres { get; set; } = [];
 }

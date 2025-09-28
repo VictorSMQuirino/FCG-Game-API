@@ -87,4 +87,24 @@ public class GameController : ControllerBase
 
 		return Ok(gameDocuments);
 	}
+
+	[ProducesResponseType(typeof(ICollection<GameDocument>), StatusCodes.Status200OK)]
+	[HttpGet("recommendations")]
+	public async Task<ActionResult<ICollection<GameDocument>>> GetRecommendationsForUser(GetRecommendationsRequest request)
+	{
+		var recommendations = await _gameService.GetRecomendationsForUser(request.UserId, request.TopGenredCount ?? 2, request.RecommentetionSize ?? 5);
+
+		return recommendations.Count > 0 ? Ok(recommendations) : NoContent();
+	}
+
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+	[HttpPost("add-game-to-user-library{gameId:guid}")]
+	public async Task<ActionResult> AddGameToUserLibrary(Guid gameId)
+	{
+		await _gameService.AddGameToUserLibrary(gameId);
+
+		return NoContent();
+	}
 }

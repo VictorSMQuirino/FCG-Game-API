@@ -15,6 +15,7 @@ public static class GameConverter
 			Developer = dto.Developer,
 			Publisher = dto.Publisher,
 			ReleaseDate = dto.ReleaseDate,
+			Genres = [.. dto.Genres],
 			UserGames = []
 		};
 
@@ -26,6 +27,7 @@ public static class GameConverter
 		game.Publisher = dto.Publisher;
 		game.Price = dto.Price;
 		game.ReleaseDate = dto.ReleaseDate;
+		game.Genres = [.. dto.Genres];
 
 		return game;
 	}
@@ -44,6 +46,7 @@ public static class GameConverter
 			Description = game.Description,
 			Developer = game.Developer,
 			Publisher = game.Publisher,
-			ReleaseDate = game.ReleaseDate
+			ReleaseDate = game.ReleaseDate,
+			Genres = [.. game.Genres.Select(g => g.ToString())]
 		};
 }

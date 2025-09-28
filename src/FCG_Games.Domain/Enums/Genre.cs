@@ -2,7 +2,7 @@
 
 public enum Genre
 {
-	RPG,
+	RPG = 1,
 	Sandbox,
 	Shooter,
 	Sports,

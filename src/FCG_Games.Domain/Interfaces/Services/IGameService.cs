@@ -12,4 +12,6 @@ public interface IGameService
 	Task<GameDto?> GetByIdAsync(Guid id);
 	Task<ICollection<GameDto>> GetAllAsync();
 	Task<ICollection<GameDocument>> Search(ElasticsearchQueryParameters elasticsearchQueryParameters);
+	Task<ICollection<GameDocument>> GetRecomendationsForUser(Guid userId, int topGenredCount = 2, int recommendationSize = 5);
+	Task AddGameToUserLibrary(Guid gameId);
 }

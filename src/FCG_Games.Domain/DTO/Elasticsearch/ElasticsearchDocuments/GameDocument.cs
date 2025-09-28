@@ -8,4 +8,6 @@ public class GameDocument
 	public required string Developer { get; set; }
 	public required string Publisher { get; set; }
 	public DateOnly ReleaseDate { get; set; }
+	public ICollection<string> Genres { get; set; } = [];
+	public ICollection<Guid> OwnerUserIds { get; set; } = [];
 }

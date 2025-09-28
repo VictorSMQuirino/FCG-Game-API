@@ -12,7 +12,6 @@ using FCG_Games.Domain.Extensions;
 using FCG_Games.Domain.Interfaces.Repositories;
 using FCG_Games.Domain.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
-using System.Reflection;
 
 namespace FCG_Games.Application.Services;
 
@@ -21,12 +20,16 @@ public class GameService : IGameService
 	private readonly IGameRepository _gameRepository;
 	private readonly ElasticsearchClient _elasticClient;
 	private readonly IConfiguration _configuration;
+	private readonly IApplicationUserService _applicationUserService;
+	private readonly IUserGameRepository _userGameRepository;
 
-	public GameService(IGameRepository gameRepository, ElasticsearchClient elasticClient, IConfiguration configuration)
+	public GameService(IGameRepository gameRepository, ElasticsearchClient elasticClient, IConfiguration configuration, IApplicationUserService applicationUserService, IUserGameRepository userGameRepository)
 	{
 		_gameRepository = gameRepository;
 		_elasticClient = elasticClient;
 		_configuration = configuration;
+		_applicationUserService = applicationUserService;
+		_userGameRepository = userGameRepository;
 	}
 
 	public async Task<Guid> CreateAsync(CreateGameDto dto)
@@ -139,5 +142,95 @@ public class GameService : IGameService
 		if (!response.IsValidResponse) throw new ElasticsearchException(ElasticsearchOperation.Search, index);
 
 		return [.. response.Documents];
+	}
+
+	public async Task<ICollection<GameDocument>> GetRecomendationsForUser(Guid userId, int topGenredCount = 2, int recommendationSize = 5)
+	{
+		var index = _configuration["Elasticsearch:Index"];
+
+		var aggregationResponse = await _elasticClient
+			.SearchAsync<GameDocument>(s => s
+				.Indices(index!)
+				.Size(0)
+				.Query(q => q
+					.Term(t => t.Field(f => f.OwnerUserIds).Value(userId.ToString()))
+				)
+				.Aggregations(aggs => aggs
+					.Add("top_genres_agg", aggregation => aggregation
+						.Terms(t => t
+							.Field(f => f.Genres.Suffix("keyword"))
+							.Size(topGenredCount)
+						)
+					)
+				)
+			);
+
+		if (!aggregationResponse.IsValidResponse)
+			throw new ElasticsearchException(ElasticsearchOperation.Search);
+
+		var topGenres = aggregationResponse.Aggregations?
+			.GetStringTerms("top_genres_agg")?
+			.Buckets
+			.Select(b => b.Key)
+			.ToList() ?? [];
+
+		if (topGenres.Count == 0) return [];
+
+		var recommendationResponse = await _elasticClient.SearchAsync<GameDocument>(s => s
+			.Indices(index!)
+			.Size(recommendationSize)
+			.Query(q => q
+				.Bool(b => b
+					.Should(sh => sh
+						.Terms(t => t
+							.Field(f => f.Genres.Suffix("keyword"))
+							.Terms(new TermsQueryField(topGenres))
+						)
+					)
+					.MinimumShouldMatch(1)
+					.MustNot(mn => mn
+						.Term(t => t
+							.Field(f => f.OwnerUserIds)
+							.Value(userId.ToString())
+						)
+					)
+				)
+			)
+		);
+
+		if (!recommendationResponse.IsValidResponse)
+			throw new ElasticsearchException(ElasticsearchOperation.Search);
+
+		return [.. recommendationResponse.Documents];
+	}
+
+	public async Task AddGameToUserLibrary(Guid gameId)
+	{
+		var loggedUserId = _applicationUserService.GetUserId();
+
+		var game = await _gameRepository.GetByIdAsync(gameId) ?? throw new NotFoundException(nameof(Game), gameId);
+
+		var userGameAlreadyExists = await _userGameRepository.ExistsBy(ug => ug.UserId == loggedUserId && ug.GameId == gameId);
+
+		if (userGameAlreadyExists)
+			throw new DomainException("The logged user already has the game in own library.");
+
+		var elasticGetResponse = await _elasticClient.GetAsync<GameDocument>(1, gr => gr.Index(_configuration["Elasticsearch:Index"]!));
+
+		if (!elasticGetResponse.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Search, $"{_configuration["Elasticsearch:Index"]}", $"{gameId}");
+
+		var gameDocument = elasticGetResponse.Found ? elasticGetResponse.Source : game.ToElasticsearchDocument();
+		gameDocument!.OwnerUserIds.Add(loggedUserId);
+		var elasticIndexResponse = await _elasticClient.IndexAsync(gameDocument, idx => idx.Index(_configuration["Elasticsearch:Index"]!).Id(gameDocument?.Id));
+
+		if (!elasticIndexResponse.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Index, $"{_configuration["Elasticsearch:Index"]}", $"{gameDocument?.Id}");
+
+		var userGame = new UserGame
+		{
+			UserId = loggedUserId,
+			GameId = gameId
+		};
+
+		await _userGameRepository.CreateAsync(userGame);
 	}
 }
