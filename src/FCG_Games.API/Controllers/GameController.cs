@@ -4,6 +4,7 @@ using FCG_Games.API.Responses;
 using FCG_Games.API.Responses.Game;
 using FCG_Games.Domain.DTO.Elasticsearch;
 using FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
+using FCG_Games.Domain.Enums;
 using FCG_Games.Domain.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,10 @@ public class GameController : ControllerBase
 		_gameService = gameService;
 	}
 
+	[Authorize(Roles = nameof(UserRole.Admin))]
 	[ProducesResponseType(StatusCodes.Status201Created)]
+	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
 	[HttpPost]
 	public async Task<ActionResult> Create(CreateGameRequest request)
@@ -33,7 +37,10 @@ public class GameController : ControllerBase
 		return CreatedAtAction(nameof(GetById), new { id }, id);
 	}
 
+	[Authorize(Roles = nameof(UserRole.Admin))]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
 	[HttpPut("{id:guid}")]
@@ -46,7 +53,10 @@ public class GameController : ControllerBase
 		return NoContent();
 	}
 
+	[Authorize(Roles = nameof(UserRole.Admin))]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+	[ProducesResponseType(StatusCodes.Status403Forbidden)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
 	[HttpDelete("{id:guid}")]
@@ -88,16 +98,20 @@ public class GameController : ControllerBase
 		return Ok(gameDocuments);
 	}
 
+	[Authorize]
 	[ProducesResponseType(typeof(ICollection<GameDocument>), StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 	[HttpGet("recommendations")]
-	public async Task<ActionResult<ICollection<GameDocument>>> GetRecommendationsForUser(GetRecommendationsRequest request)
+	public async Task<ActionResult<ICollection<GameDocument>>> GetRecommendationsForUser([FromQuery]GetRecommendationsRequest request)
 	{
-		var recommendations = await _gameService.GetRecomendationsForUser(request.UserId, request.TopGenredCount ?? 2, request.RecommentetionSize ?? 5);
+		var recommendations = await _gameService.GetRecomendationsForUser(request.TopGenredCount ?? 2, request.RecommentetionSize ?? 5);
 
 		return recommendations.Count > 0 ? Ok(recommendations) : NoContent();
 	}
 
+	[Authorize]
 	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 	[HttpPost("add-game-to-user-library{gameId:guid}")]

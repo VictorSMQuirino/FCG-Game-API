@@ -86,15 +86,27 @@ public class GameService : IGameService
 			game = dto.ToEntity(game);
 			await _gameRepository.UpdateAsync(game);
 
-			var gameDocument = game.ToElasticsearchDocument();
+			var partialDocument = new
+			{
+				game.Title,
+				game.Description,
+				game.Developer,
+				game.Publisher,
+				game.ReleaseDate,
+				game.Genres
+			};
 
-			var elasticResponse = await _elasticClient.IndexAsync(gameDocument, idx => idx.Index(_configuration["Elasticsearch:Index"]!).Id(gameDocument.Id));
+			var elasticResponse = await _elasticClient.UpdateAsync<GameDocument, object>(
+				_configuration["Elasticsearch:Index"]!,
+				game.Id,
+				u => u.Doc(partialDocument)
+				);
 
-			if (!elasticResponse.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Index, $"{_configuration["Elasticsearch:Index"]}", $"{gameDocument.Id}");
+			if (!elasticResponse.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Update, $"{_configuration["Elasticsearch:Index"]}", $"{game.Id}");
 
 			await transaction.CommitAsync();
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
 			await transaction.RollbackAsync();
 			throw;
@@ -144,8 +156,10 @@ public class GameService : IGameService
 		return [.. response.Documents];
 	}
 
-	public async Task<ICollection<GameDocument>> GetRecomendationsForUser(Guid userId, int topGenredCount = 2, int recommendationSize = 5)
+	public async Task<ICollection<GameDocument>> GetRecomendationsForUser(int topGenredCount = 2, int recommendationSize = 5)
 	{
+		var userId = _applicationUserService.GetUserId();
+
 		var index = _configuration["Elasticsearch:Index"];
 
 		var aggregationResponse = await _elasticClient
@@ -153,7 +167,8 @@ public class GameService : IGameService
 				.Indices(index!)
 				.Size(0)
 				.Query(q => q
-					.Term(t => t.Field(f => f.OwnerUserIds).Value(userId.ToString()))
+					.Term(t => t.Field(f => f.OwnerUserIds)
+					.Value(userId.ToString()))
 				)
 				.Aggregations(aggs => aggs
 					.Add("top_genres_agg", aggregation => aggregation
@@ -208,22 +223,27 @@ public class GameService : IGameService
 	{
 		var loggedUserId = _applicationUserService.GetUserId();
 
-		var game = await _gameRepository.GetByIdAsync(gameId) ?? throw new NotFoundException(nameof(Game), gameId);
+		var gameExists = await _gameRepository.ExistsBy(g => g.Id == gameId);
+
+		if (!gameExists)
+			throw new NotFoundException(nameof(Game), gameId);
 
 		var userGameAlreadyExists = await _userGameRepository.ExistsBy(ug => ug.UserId == loggedUserId && ug.GameId == gameId);
 
 		if (userGameAlreadyExists)
 			throw new DomainException("The logged user already has the game in own library.");
 
-		var elasticGetResponse = await _elasticClient.GetAsync<GameDocument>(1, gr => gr.Index(_configuration["Elasticsearch:Index"]!));
+		var elasticUpdateResponse = await _elasticClient.UpdateAsync<GameDocument, object>(
+			_configuration["Elasticsearch:Index"]!,
+			gameId,
+			u => u.Script(s => s
+				.Source("ctx._source.ownerUserIds.add(params.userId)")
+				.Params(p => p.Add("userId", loggedUserId))
+				)
+			);
 
-		if (!elasticGetResponse.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Search, $"{_configuration["Elasticsearch:Index"]}", $"{gameId}");
-
-		var gameDocument = elasticGetResponse.Found ? elasticGetResponse.Source : game.ToElasticsearchDocument();
-		gameDocument!.OwnerUserIds.Add(loggedUserId);
-		var elasticIndexResponse = await _elasticClient.IndexAsync(gameDocument, idx => idx.Index(_configuration["Elasticsearch:Index"]!).Id(gameDocument?.Id));
-
-		if (!elasticIndexResponse.IsSuccess()) throw new ElasticsearchException(ElasticsearchOperation.Index, $"{_configuration["Elasticsearch:Index"]}", $"{gameDocument?.Id}");
+		if (!elasticUpdateResponse.IsValidResponse)
+			throw new ElasticsearchException(ElasticsearchOperation.Update);
 
 		var userGame = new UserGame
 		{
