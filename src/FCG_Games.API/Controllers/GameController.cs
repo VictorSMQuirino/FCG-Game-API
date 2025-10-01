@@ -102,7 +102,7 @@ public class GameController : ControllerBase
 	[ProducesResponseType(typeof(ICollection<GameDocument>), StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 	[HttpGet("recommendations")]
-	public async Task<ActionResult<ICollection<GameDocument>>> GetRecommendationsForUser([FromQuery]GetRecommendationsRequest request)
+	public async Task<ActionResult<ICollection<GameRecommendationDto>>> GetRecommendationsForUser([FromQuery]GetRecommendationsRequest request)
 	{
 		var recommendations = await _gameService.GetRecomendationsForUser(request.TopGenredCount ?? 2, request.RecommentetionSize ?? 5);
 

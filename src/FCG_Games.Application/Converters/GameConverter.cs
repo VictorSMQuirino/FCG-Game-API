@@ -49,4 +49,17 @@ public static class GameConverter
 			ReleaseDate = game.ReleaseDate,
 			Genres = [.. game.Genres.Select(g => g.ToString())]
 		};
+
+	public static ICollection<GameRecommendationDto> ToRecommendationsDto(this IReadOnlyCollection<GameDocument> documents)
+		=> [.. documents.Select(doc => new GameRecommendationDto(
+					doc.Id,
+					doc.Title,
+					doc.Description,
+					doc.Developer,
+					doc.Publisher,
+					doc.ReleaseDate,
+					doc.Genres
+					)
+				)
+			];
 }

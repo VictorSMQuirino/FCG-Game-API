@@ -156,7 +156,7 @@ public class GameService : IGameService
 		return [.. response.Documents];
 	}
 
-	public async Task<ICollection<GameDocument>> GetRecomendationsForUser(int topGenredCount = 2, int recommendationSize = 5)
+	public async Task<ICollection<GameRecommendationDto>> GetRecomendationsForUser(int topGenredCount = 2, int recommendationSize = 5)
 	{
 		var userId = _applicationUserService.GetUserId();
 
@@ -173,7 +173,7 @@ public class GameService : IGameService
 				.Aggregations(aggs => aggs
 					.Add("top_genres_agg", aggregation => aggregation
 						.Terms(t => t
-							.Field(f => f.Genres.Suffix("keyword"))
+							.Field(f => f.Genres)
 							.Size(topGenredCount)
 						)
 					)
@@ -198,7 +198,7 @@ public class GameService : IGameService
 				.Bool(b => b
 					.Should(sh => sh
 						.Terms(t => t
-							.Field(f => f.Genres.Suffix("keyword"))
+							.Field(f => f.Genres)
 							.Terms(new TermsQueryField(topGenres))
 						)
 					)
@@ -216,7 +216,9 @@ public class GameService : IGameService
 		if (!recommendationResponse.IsValidResponse)
 			throw new ElasticsearchException(ElasticsearchOperation.Search);
 
-		return [.. recommendationResponse.Documents];
+		var recommendationsDtoList = recommendationResponse.Documents.ToRecommendationsDto();
+
+		return recommendationsDtoList;
 	}
 
 	public async Task AddGameToUserLibrary(Guid gameId)
