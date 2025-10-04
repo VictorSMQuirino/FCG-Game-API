@@ -3,6 +3,7 @@ using System;
 using FCG_Games.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FCG_Games.Infrastructure.Migrations
 {
     [DbContext(typeof(FCGGamesDbContext))]
-    partial class FCGGamesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251004150152_Alter_UserGames_Table_Add_GameAccessState_Column")]
+    partial class Alter_UserGames_Table_Add_GameAccessState_Column
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

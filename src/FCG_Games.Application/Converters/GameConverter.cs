@@ -50,8 +50,8 @@ public static class GameConverter
 			Genres = [.. game.Genres.Select(g => g.ToString())]
 		};
 
-	public static ICollection<GameRecommendationDto> ToRecommendationsDto(this IReadOnlyCollection<GameDocument> documents)
-		=> [.. documents.Select(doc => new GameRecommendationDto(
+	public static ICollection<GameDocumentResponseDto> ToRecommendationsDto(this IReadOnlyCollection<GameDocument> documents)
+		=> [.. documents.Select(doc => new GameDocumentResponseDto(
 					doc.Id,
 					doc.Title,
 					doc.Description,

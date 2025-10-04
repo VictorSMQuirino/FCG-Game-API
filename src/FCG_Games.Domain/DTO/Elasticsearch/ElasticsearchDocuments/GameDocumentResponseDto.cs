@@ -1,6 +1,6 @@
 ﻿namespace FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
 
-public record GameRecommendationDto(
+public record GameDocumentResponseDto(
 	Guid Id,
 	string Title,
 	string? Description,

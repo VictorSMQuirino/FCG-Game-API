@@ -156,7 +156,7 @@ public class GameService : IGameService
 		return [.. response.Documents];
 	}
 
-	public async Task<ICollection<GameRecommendationDto>> GetRecomendationsForUser(int topGenredCount = 2, int recommendationSize = 5)
+	public async Task<ICollection<GameDocumentResponseDto>> GetRecomendationsForUser(int topGenredCount = 2, int recommendationSize = 5)
 	{
 		var userId = _applicationUserService.GetUserId();
 
@@ -250,9 +250,32 @@ public class GameService : IGameService
 		var userGame = new UserGame
 		{
 			UserId = loggedUserId,
-			GameId = gameId
+			GameId = gameId,
+			GameAccessState = GameAccessState.Blocked
 		};
 
 		await _userGameRepository.CreateAsync(userGame);
+	}
+
+	public async Task GuaranteAccessToGameForUser(Guid userId, Guid gameId)
+	{
+		var userGame = await _userGameRepository.GetBy(ug => ug.UserId == userId && ug.GameId == gameId) 
+			?? throw new NotFoundException(nameof(UserGame), new { userId, gameId });
+
+		userGame.GameAccessState = GameAccessState.Guaranteed;
+
+		await _userGameRepository.UpdateAsync(userGame);
+	}
+
+	public async Task<ICollection<GameDto>?> GetGamesInLibraryOfLoggedUser()
+	{
+		var userId =  _applicationUserService.GetUserId();
+
+		var userGamesList = await _userGameRepository.GetListBy(ug => ug.UserId == userId && ug.GameAccessState == GameAccessState.Guaranteed);
+		var gamesIdsOfUserLibrary = userGamesList.Select(ug => ug.GameId).ToList();
+
+		var gameList = await _gameRepository.GetListBy(g => gamesIdsOfUserLibrary.Contains(g.Id));
+
+		return gameList.ToDtoList();
 	}
 }

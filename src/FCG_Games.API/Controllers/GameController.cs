@@ -2,6 +2,7 @@
 using FCG_Games.API.Requests.Game;
 using FCG_Games.API.Responses;
 using FCG_Games.API.Responses.Game;
+using FCG_Games.Domain.DTO;
 using FCG_Games.Domain.DTO.Elasticsearch;
 using FCG_Games.Domain.DTO.Elasticsearch.ElasticsearchDocuments;
 using FCG_Games.Domain.Enums;
@@ -99,10 +100,10 @@ public class GameController : ControllerBase
 	}
 
 	[Authorize]
-	[ProducesResponseType(typeof(ICollection<GameDocument>), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(ICollection<GameDocumentResponseDto>), StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 	[HttpGet("recommendations")]
-	public async Task<ActionResult<ICollection<GameRecommendationDto>>> GetRecommendationsForUser([FromQuery]GetRecommendationsRequest request)
+	public async Task<ActionResult<ICollection<GameDocumentResponseDto>>> GetRecommendationsForUser([FromQuery]GetRecommendationsRequest request)
 	{
 		var recommendations = await _gameService.GetRecomendationsForUser(request.TopGenredCount ?? 2, request.RecommentetionSize ?? 5);
 
@@ -114,11 +115,33 @@ public class GameController : ControllerBase
 	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-	[HttpPost("add-game-to-user-library{gameId:guid}")]
+	[HttpPost("add-game-to-user-library/{gameId:guid}")]
 	public async Task<ActionResult> AddGameToUserLibrary(Guid gameId)
 	{
 		await _gameService.AddGameToUserLibrary(gameId);
 
 		return NoContent();
+	}
+
+	[AllowAnonymous]
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+	[HttpPost("{gameId:guid}/guarante-access/{userId:guid}")]
+	public async Task<ActionResult> GuaranteGameAccessToUser(Guid gameId, Guid userId)
+	{
+		await _gameService.GuaranteAccessToGameForUser(userId, gameId);
+
+		return NoContent();
+	}
+
+	[Authorize]
+	[ProducesResponseType(typeof(ICollection<GetGameByIdResponse>), StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status204NoContent)]
+	[HttpGet("in-library-for-logged-user")]
+	public async Task<ActionResult<GetGameByIdResponse>> GetGamesInLibrary()
+	{
+		var dtoList = await _gameService.GetGamesInLibraryOfLoggedUser();
+
+		return dtoList.Count != 0 ? Ok(dtoList.ToResponse()) : NoContent();
 	}
 }
