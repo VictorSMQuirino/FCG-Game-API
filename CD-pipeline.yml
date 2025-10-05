@@ -1,0 +1,35 @@
+trigger:
+  tags:
+    include:
+    - v*
+
+pr: none
+
+variables:
+  #ACR
+  dockerRegistryServiceConnection: 'ACRConnection'
+  imageRepository: 'fcg-games'
+  containerRegistry: 'fiapcloudgamesregistry.azurecr.io'
+  dockerfilePath: 'src/FCG_Games.API/Dockerfile'
+
+pool:
+  name: 'Default'
+
+stages:
+- stage: Build_and_Push_Docker_Image
+  displayName: '1. Build and Push Docker Image'
+  jobs:
+  - job: DockerJob
+    displayName: 'Docker Build and Push to ACR'
+    steps:
+    - task: Docker@2
+      displayName: 'Build and Push to ACR'
+      inputs:
+        containerRegistry: $(dockerRegistryServiceConnection)
+        repository: $(imageRepository)
+        command: 'buildAndPush'
+        Dockerfile: $(dockerfilePath)
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(Build.SourceBranchName)
+          latest
