@@ -13,6 +13,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FCG_Games.Application", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FCG_Games.API", "src\FCG_Games.API\FCG_Games.API.csproj", "{D90F1FD7-AB83-46E3-BE2C-46CEA0A9BBBB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03 - Items", "03 - Items", "{FBC101A5-5A64-46B8-BB7A-CA47BDDFF77E}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.gitignore = .gitignore
+		CD-pipeline.yml = CD-pipeline.yml
+		CI-pipeline.yml = CI-pipeline.yml
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
