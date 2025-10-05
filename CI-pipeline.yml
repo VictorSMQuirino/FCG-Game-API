@@ -1,0 +1,43 @@
+trigger:
+  branches:
+    include:
+      - main
+  tags:
+    exclude:
+      - '*'
+
+pr:
+  - main
+
+variables:
+  dotnetSdkVersion: '8.x'
+  buildConfiguration: 'Release'
+
+pool:
+  name: 'Default'
+
+stages:
+  - stage: Build
+    displayName: '1. Build Project'
+    jobs:
+      - job: 'BuildJob'
+        displayName: 'Build'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Setup .NET 8'
+            inputs:
+              packageType: sdk
+              version: '$(dotnetSdkVersion)'
+          
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore dependencies'
+            inputs:
+              command: restore
+              projects: '**/*.sln'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build project'
+            inputs:
+              command: build
+              projects: '**/*.sln'
+              arguments: '--configuration $(buildConfiguration)'
