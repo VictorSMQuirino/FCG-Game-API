@@ -13,7 +13,7 @@ public interface IGameService
 	Task<ICollection<GameDto>> GetAllAsync();
 	Task<ICollection<GameDocument>> Search(ElasticsearchQueryParameters elasticsearchQueryParameters);
 	Task<ICollection<GameDocumentResponseDto>> GetRecomendationsForUser(int topGenredCount = 2, int recommendationSize = 5);
-	Task AddGameToUserLibrary(Guid gameId);
+	Task AddGameToUserLibrary(Guid gameId, string paymentInfo);
 	Task GuaranteAccessToGameForUser(Guid userId, Guid gameId);
 	Task<ICollection<GameDto>> GetGamesInLibraryOfLoggedUser();
 }

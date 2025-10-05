@@ -9,6 +9,8 @@ using FCG_Games.Domain.Entities;
 using FCG_Games.Domain.Enums;
 using FCG_Games.Domain.Exceptions;
 using FCG_Games.Domain.Extensions;
+using FCG_Games.Domain.External.Payments.DTO;
+using FCG_Games.Domain.External.Payments.Interfaces;
 using FCG_Games.Domain.Interfaces.Repositories;
 using FCG_Games.Domain.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
@@ -22,14 +24,16 @@ public class GameService : IGameService
 	private readonly IConfiguration _configuration;
 	private readonly IApplicationUserService _applicationUserService;
 	private readonly IUserGameRepository _userGameRepository;
+	private readonly IPaymentsApi _paymentsApi;
 
-	public GameService(IGameRepository gameRepository, ElasticsearchClient elasticClient, IConfiguration configuration, IApplicationUserService applicationUserService, IUserGameRepository userGameRepository)
+	public GameService(IGameRepository gameRepository, ElasticsearchClient elasticClient, IConfiguration configuration, IApplicationUserService applicationUserService, IUserGameRepository userGameRepository, IPaymentsApi paymentsApi)
 	{
 		_gameRepository = gameRepository;
 		_elasticClient = elasticClient;
 		_configuration = configuration;
 		_applicationUserService = applicationUserService;
 		_userGameRepository = userGameRepository;
+		_paymentsApi = paymentsApi;
 	}
 
 	public async Task<Guid> CreateAsync(CreateGameDto dto)
@@ -221,7 +225,7 @@ public class GameService : IGameService
 		return recommendationsDtoList;
 	}
 
-	public async Task AddGameToUserLibrary(Guid gameId)
+	public async Task AddGameToUserLibrary(Guid gameId, string paymentInfo)
 	{
 		var loggedUserId = _applicationUserService.GetUserId();
 
@@ -234,6 +238,13 @@ public class GameService : IGameService
 
 		if (userGameAlreadyExists)
 			throw new DomainException("The logged user already has the game in own library.");
+
+		var purchaseData = new PurchaseData
+		{
+			UserId = loggedUserId.ToString(),
+			GameId = gameId.ToString(),
+			PaymentInfo = paymentInfo
+		};
 
 		var elasticUpdateResponse = await _elasticClient.UpdateAsync<GameDocument, object>(
 			_configuration["Elasticsearch:Index"]!,
@@ -255,6 +266,7 @@ public class GameService : IGameService
 		};
 
 		await _userGameRepository.CreateAsync(userGame);
+		await _paymentsApi.StartPaymentProcessingAsync(purchaseData);
 	}
 
 	public async Task GuaranteAccessToGameForUser(Guid userId, Guid gameId)
@@ -262,9 +274,12 @@ public class GameService : IGameService
 		var userGame = await _userGameRepository.GetBy(ug => ug.UserId == userId && ug.GameId == gameId) 
 			?? throw new NotFoundException(nameof(UserGame), new { userId, gameId });
 
-		userGame.GameAccessState = GameAccessState.Guaranteed;
+		if (userGame.GameAccessState != GameAccessState.Guaranteed)
+		{
+			userGame.GameAccessState = GameAccessState.Guaranteed;
 
-		await _userGameRepository.UpdateAsync(userGame);
+			await _userGameRepository.UpdateAsync(userGame);
+		}
 	}
 
 	public async Task<ICollection<GameDto>?> GetGamesInLibraryOfLoggedUser()

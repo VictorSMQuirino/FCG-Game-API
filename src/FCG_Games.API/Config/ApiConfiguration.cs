@@ -1,6 +1,9 @@
-﻿using FCG_Games.Application.Auth;
+﻿using FCG_Games.API.Middlewares;
+using FCG_Games.Application.Auth;
+using FCG_Games.Domain.External.Payments.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Refit;
 
 namespace FCG_Games.API.Config;
 
@@ -33,6 +36,21 @@ public static class ApiConfiguration
 		});
 
 		services.AddAuthorization();
+
+		return services;
+	}
+
+	public static IServiceCollection ConfigureRefit(this IServiceCollection services, IConfiguration configuration)
+	{
+		services.AddTransient<RefitLoggingHandler>();
+
+		services
+			.AddRefitClient<IPaymentsApi>()
+			.ConfigureHttpClient(c =>
+			{
+				c.BaseAddress = new Uri(configuration["PaymentsApi:Url"]!);
+			})
+			.AddHttpMessageHandler<RefitLoggingHandler>();
 
 		return services;
 	}

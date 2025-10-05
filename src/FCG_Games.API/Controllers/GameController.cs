@@ -1,5 +1,6 @@
 ﻿using FCG_Games.API.Extensions.Converters;
 using FCG_Games.API.Requests.Game;
+using FCG_Games.API.Requests.Payment;
 using FCG_Games.API.Responses;
 using FCG_Games.API.Responses.Game;
 using FCG_Games.Domain.DTO;
@@ -116,9 +117,9 @@ public class GameController : ControllerBase
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
 	[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 	[HttpPost("add-game-to-user-library/{gameId:guid}")]
-	public async Task<ActionResult> AddGameToUserLibrary(Guid gameId)
+	public async Task<ActionResult> AddGameToUserLibrary(Guid gameId, PaymentInfo paymentInfo)
 	{
-		await _gameService.AddGameToUserLibrary(gameId);
+		await _gameService.AddGameToUserLibrary(gameId, paymentInfo.PaymentMethod);
 
 		return NoContent();
 	}
