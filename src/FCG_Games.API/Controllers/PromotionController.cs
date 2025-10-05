@@ -1,11 +1,14 @@
 ﻿using FCG_Games.API.Extensions.Converters;
 using FCG_Games.API.Requests.Promotion;
 using FCG_Games.API.Responses.Promotion;
+using FCG_Games.Domain.Enums;
 using FCG_Games.Domain.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FCG_Games.API.Controllers;
 
+[Authorize(Roles = nameof(UserRole.Admin))]
 [ApiController]
 [Route("api/v1/promotions")]
 public class PromotionController : ControllerBase
