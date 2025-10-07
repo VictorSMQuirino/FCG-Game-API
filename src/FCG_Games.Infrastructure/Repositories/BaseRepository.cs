@@ -44,7 +44,8 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 	{
 		var query = _dbSet.AsQueryable();
 
-		includes.ToList().ForEach(i => query.Include(i));
+		foreach (var include in includes)
+			query = query.Include(include);
 
 		return await query.SingleOrDefaultAsync(e => e.Id == id);
 	}
@@ -56,7 +57,8 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 	{
 		var query = _dbSet.AsQueryable();
 
-		includes.ToList().ForEach(i => query.Include(i));
+		foreach (var include in includes)
+			query = query.Include(include);
 
 		return await query.ToListAsync();
 	}
@@ -68,7 +70,8 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 	{
 		var query = _dbSet.AsQueryable();
 
-		includes.ToList().ForEach(i => query.Include(i));
+		foreach (var include in includes)
+			query = query.Include(include);
 
 		return await query.Where(predicate).ToListAsync();
 	}
