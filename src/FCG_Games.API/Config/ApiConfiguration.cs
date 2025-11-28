@@ -3,6 +3,8 @@ using FCG_Games.Application.Auth;
 using FCG_Games.Domain.External.Payments.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Refit;
 
 namespace FCG_Games.API.Config;
@@ -51,6 +53,22 @@ public static class ApiConfiguration
 				c.BaseAddress = new Uri(configuration["PaymentsApi:Url"]!);
 			})
 			.AddHttpMessageHandler<RefitLoggingHandler>();
+
+		return services;
+	}
+
+	public static IServiceCollection ConfigureOpenTelemetry(this IServiceCollection services)
+	{
+		services.AddOpenTelemetry()
+			.ConfigureResource(resource => resource.AddService("Games-API"))
+			.WithMetrics(metrics =>
+			{
+				metrics
+				.AddAspNetCoreInstrumentation()
+				.AddRuntimeInstrumentation()
+				.AddPrometheusExporter();
+
+			});
 
 		return services;
 	}

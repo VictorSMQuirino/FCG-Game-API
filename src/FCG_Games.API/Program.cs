@@ -14,6 +14,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddElasticsearch(builder.Configuration);
 builder.Services.ConfigureRefit(builder.Configuration);
+builder.Services.ConfigureOpenTelemetry();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -40,11 +41,13 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
 
 app.UseMiddleware<LoggingMiddleware>();
 
 app.UseAuthorization();
+
+app.MapPrometheusScrapingEndpoint();
 
 app.MapControllers();
 
