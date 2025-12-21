@@ -1,5 +1,6 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using FCG.RabbitMQ.Events;
 using FCG_Games.Application.Converters;
 using FCG_Games.Application.Validators.Game;
 using FCG_Games.Domain.DTO;
@@ -9,10 +10,11 @@ using FCG_Games.Domain.Entities;
 using FCG_Games.Domain.Enums;
 using FCG_Games.Domain.Exceptions;
 using FCG_Games.Domain.Extensions;
-using FCG_Games.Domain.External.Payments.DTO;
 using FCG_Games.Domain.External.Payments.Interfaces;
 using FCG_Games.Domain.Interfaces.Repositories;
 using FCG_Games.Domain.Interfaces.Services;
+using MassTransit;
+using MassTransit.Initializers;
 using Microsoft.Extensions.Configuration;
 
 namespace FCG_Games.Application.Services;
@@ -25,8 +27,9 @@ public class GameService : IGameService
 	private readonly IApplicationUserService _applicationUserService;
 	private readonly IUserGameRepository _userGameRepository;
 	private readonly IPaymentsApi _paymentsApi;
+	private readonly IPublishEndpoint _publishEndpoint;
 
-	public GameService(IGameRepository gameRepository, ElasticsearchClient elasticClient, IConfiguration configuration, IApplicationUserService applicationUserService, IUserGameRepository userGameRepository, IPaymentsApi paymentsApi)
+	public GameService(IGameRepository gameRepository, ElasticsearchClient elasticClient, IConfiguration configuration, IApplicationUserService applicationUserService, IUserGameRepository userGameRepository, IPaymentsApi paymentsApi, IPublishEndpoint publishEndpoint)
 	{
 		_gameRepository = gameRepository;
 		_elasticClient = elasticClient;
@@ -34,6 +37,7 @@ public class GameService : IGameService
 		_applicationUserService = applicationUserService;
 		_userGameRepository = userGameRepository;
 		_paymentsApi = paymentsApi;
+		_publishEndpoint = publishEndpoint;
 	}
 
 	public async Task<Guid> CreateAsync(CreateGameDto dto)
@@ -64,7 +68,7 @@ public class GameService : IGameService
 
 			return newGame.Id;
 		}
-		catch(Exception)
+		catch (Exception)
 		{
 			await transaction.RollbackAsync();
 			throw;
@@ -146,7 +150,7 @@ public class GameService : IGameService
 			.Indices(index!)
 			.From(elasticsearchQueryParameters.StartDocumentPosition)
 			.Size(elasticsearchQueryParameters.Size)
-			.Query(q => 
+			.Query(q =>
 				q.MultiMatch(mm => mm
 					.Query(elasticsearchQueryParameters.Term)
 					.Type(TextQueryType.BoolPrefix)
@@ -177,10 +181,10 @@ public class GameService : IGameService
 				.Aggregations(aggs => aggs
 					.Add("top_genres_agg", aggregation => aggregation
 						.Terms(t => t
-							.Field(f => f.Genres)
-							.Size(topGenredCount)
-						)
+						.Field(f => f.Genres)
+						.Size(topGenredCount)
 					)
+				)
 				)
 			);
 
@@ -229,34 +233,27 @@ public class GameService : IGameService
 	{
 		var loggedUserId = _applicationUserService.GetUserId();
 
-		var gameExists = await _gameRepository.ExistsBy(g => g.Id == gameId);
+		var game = await _gameRepository.GetByIdAsync(gameId) ?? throw new NotFoundException(nameof(Game), gameId);
 
-		if (!gameExists)
-			throw new NotFoundException(nameof(Game), gameId);
+		var userGameInDb = await _userGameRepository.GetBy(ug => ug.UserId == loggedUserId && ug.GameId == gameId);
 
-		var userGameAlreadyExists = await _userGameRepository.ExistsBy(ug => ug.UserId == loggedUserId && ug.GameId == gameId);
-
-		if (userGameAlreadyExists)
-			throw new DomainException("The logged user already has the game in own library.");
-
-		var purchaseData = new PurchaseData
+		if (userGameInDb is not null)
 		{
-			UserId = loggedUserId.ToString(),
-			GameId = gameId.ToString(),
-			PaymentInfo = paymentInfo
-		};
+			throw userGameInDb.GameAccessState switch
+			{
+				GameAccessState.Guaranteed => new DomainException($"The logged-in user already has {game.Title} in own library.", nameof(UserGame), nameof(GameAccessState)),
+				GameAccessState.Blocked => new DomainException($"The logged-in user has a pending order for {game.Title}.", nameof(UserGame), nameof(GameAccessState)),
+				_ => new Exception()
+			};
+		}
 
-		var elasticUpdateResponse = await _elasticClient.UpdateAsync<GameDocument, object>(
-			_configuration["Elasticsearch:Index"]!,
-			gameId,
-			u => u.Script(s => s
-				.Source("ctx._source.ownerUserIds.add(params.userId)")
-				.Params(p => p.Add("userId", loggedUserId))
-				)
-			);
-
-		if (!elasticUpdateResponse.IsValidResponse)
-			throw new ElasticsearchException(ElasticsearchOperation.Update);
+		var purchaseMessage = new GamePurchaseRequestedEvent(
+			loggedUserId.ToString(),
+			gameId.ToString(),
+			paymentInfo,
+			game.Price,
+			DateTime.UtcNow
+		);
 
 		var userGame = new UserGame
 		{
@@ -266,12 +263,12 @@ public class GameService : IGameService
 		};
 
 		await _userGameRepository.CreateAsync(userGame);
-		await _paymentsApi.StartPaymentProcessingAsync(purchaseData);
+		await _publishEndpoint.Publish(purchaseMessage);
 	}
 
 	public async Task GuaranteAccessToGameForUser(Guid userId, Guid gameId)
 	{
-		var userGame = await _userGameRepository.GetBy(ug => ug.UserId == userId && ug.GameId == gameId) 
+		var userGame = await _userGameRepository.GetBy(ug => ug.UserId == userId && ug.GameId == gameId)
 			?? throw new NotFoundException(nameof(UserGame), new { userId, gameId });
 
 		if (userGame.GameAccessState != GameAccessState.Guaranteed)
@@ -284,7 +281,7 @@ public class GameService : IGameService
 
 	public async Task<ICollection<GameDto>?> GetGamesInLibraryOfLoggedUser()
 	{
-		var userId =  _applicationUserService.GetUserId();
+		var userId = _applicationUserService.GetUserId();
 
 		var userGamesList = await _userGameRepository.GetListBy(ug => ug.UserId == userId && ug.GameAccessState == GameAccessState.Guaranteed);
 		var gamesIdsOfUserLibrary = userGamesList.Select(ug => ug.GameId).ToList();

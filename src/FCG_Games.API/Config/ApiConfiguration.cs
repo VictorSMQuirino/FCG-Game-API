@@ -1,6 +1,8 @@
-﻿using FCG_Games.API.Middlewares;
+﻿using FCG_Games.API.Consumers;
+using FCG_Games.API.Middlewares;
 using FCG_Games.Application.Auth;
 using FCG_Games.Domain.External.Payments.Interfaces;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Metrics;
@@ -57,10 +59,10 @@ public static class ApiConfiguration
 		return services;
 	}
 
-	public static IServiceCollection ConfigureOpenTelemetry(this IServiceCollection services)
+	public static IServiceCollection ConfigureOpenTelemetry(this IServiceCollection services, string applicationName)
 	{
 		services.AddOpenTelemetry()
-			.ConfigureResource(resource => resource.AddService("Games-API"))
+			.ConfigureResource(resource => resource.AddService(applicationName))
 			.WithMetrics(metrics =>
 			{
 				metrics
@@ -69,6 +71,27 @@ public static class ApiConfiguration
 				.AddPrometheusExporter();
 
 			});
+
+		return services;
+	}
+
+	public static IServiceCollection ConfigureMassTransit(this IServiceCollection services, IConfiguration configuration)
+	{
+		services.AddMassTransit(c =>
+		{
+			c.AddConsumer<PaymentSucceededConsumer>();
+
+			c.UsingRabbitMq((context, cfg) =>
+			{
+				cfg.Host(configuration["RabbitMQ:Host"], h =>
+				{
+					h.Username(configuration["RabbitMQ:Username"]!);
+					h.Password(configuration["RabbitMQ:Password"]!);
+				});
+
+				cfg.ConfigureEndpoints(context);
+			});
+		});
 
 		return services;
 	}
