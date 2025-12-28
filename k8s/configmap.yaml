@@ -17,4 +17,5 @@ data:
 
   #RabbitMQ
   RabbitMQ__Host: "rabbitmq-service"
-  rabbitMQ__VirtualHost: "/"
+  RabbitMQ__VirtualHost: "/"
+  RabbitMQ__Port: "5672"
