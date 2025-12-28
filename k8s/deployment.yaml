@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fcg-games-api
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fcg-games-api
+  template:
+    metadata:
+      labels:
+        app: fcg-games-api
+    spec:
+      containers:
+      - name: fcg-games-api
+        image: fiapcloudgamesregistry.azurecr.io/fcg-games:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: fcg-games-config
+        - secretRef:
+            name: fcg-games-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"

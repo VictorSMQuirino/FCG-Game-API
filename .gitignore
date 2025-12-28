@@ -615,6 +615,10 @@ fabric.properties
 .history
 .ionide
 
+
+k8s/secrets.yaml
+
+
 ### VisualStudio ###
 
 # User-specific files
