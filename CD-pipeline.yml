@@ -12,10 +12,11 @@ variables:
   containerRegistry: 'fiapcloudgamesregistry.azurecr.io'
   dockerfilePath: 'src/FCG_Games.API/Dockerfile'
 
-  #ACA
+  #AKS
   azureSubscriptionConnection: 'AzureSubscriptionConnection'
   resourceGroupName: 'FCG'
-  containerAppName: 'aca-fcg-games'
+  aksClusterName: 'fcg-cluster'
+  k8sNamespace: 'default'
 
 pool:
   name: 'Default'
@@ -39,23 +40,41 @@ stages:
           $(Build.SourceBranchName)
           latest
 
-- stage: Deploy_to_ACA
-  displayName: '2. Deploy to Azure Container App'
+- stage: Deploy_to_AKS
+  displayName: '2. Deploy to AKS'
   dependsOn: Build_and_Push_Docker_Image
   jobs:
   - job: DeployJob
-    displayName: 'Update and Start Container App'
+    displayName: 'Deploy to AKS Cluster'
     steps:
-    - task: AzureCLI@2
-      displayName: 'Deploy to Azure Container App'
+    - script: |
+        cat <<EOF> $(System.DefaultWorkingDirectory)/k8s/secrets.yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: fcg-games-secrets
+        type: Opaque
+        data:
+          ConnectionStrings__DefaultConnection: "$(DbConnectionString)"
+          Elasticsearch__ApiKey: "$(Elasticsearch__ApiKey)"
+          Jwt__Key: "$(Jwt__Key)"
+          RabbitMQ__Username: "$(RabbitMQ__Username)"
+          RabbitMQ__Password: "$(RabbitMQ__Password)"
+        EOF
+
+    - task: KubernetesManifest@1
+      displayName: 'Deploy to Kubernetes Cluster'
       inputs:
-        azureSubscription: $(azureSubscriptionConnection)
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          echo "Updating Azure Container App and ensuring it is ruinning..."
-          az containerapp update \
-            --name $(containerAppName) \
-            --resource-group $(resourceGroupName) \
-            --image $(containerRegistry)/$(imageRepository):$(Build.SourceBranchName) \
-            --min-replicas 1
+        action: 'deploy'
+        connectionType: 'azureResourceManager'
+        azureSubscriptionConnection: $(azureSubscriptionConnection)
+        azureResourceGroup: $(resourceGroupName)
+        kubernetesCluster: $(aksClusterName)
+        namespace: $(k8sNamespace)
+        manifests: |
+          $(System.DefaultWorkingDirectory)/k8s/configmap.yaml
+          $(System.DefaultWorkingDirectory)/k8s/secrets.yaml
+          $(System.DefaultWorkingDirectory)/k8s/deployment.yaml
+          $(System.DefaultWorkingDirectory)/k8s/service.yaml
+          $(System.DefaultWorkingDirectory)/k8s/hpa.yaml
+        containers: '$(containerRegistry)/$(imageRepository):$(Build.SourceBranchName)'
