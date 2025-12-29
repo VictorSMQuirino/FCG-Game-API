@@ -38,7 +38,7 @@ kind: Service
 metadata:
   name: rabbitmq-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: rabbitmq
   ports:
