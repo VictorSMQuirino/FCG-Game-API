@@ -15,21 +15,27 @@ public class PaymentSucceededConsumer : IConsumer<PaymentSucceededEvent>
 	private readonly ElasticsearchClient _elasticsearchClient;
 	private readonly IApplicationUserService _applicationUserService;
 	private readonly IConfiguration _configuration;
+	private readonly ILogger<PaymentSucceededConsumer> _logger;
 
 	public PaymentSucceededConsumer(
 		IUserGameRepository userGameRepository,
 		ElasticsearchClient elasticsearchClient,
 		IApplicationUserService applicationUserService,
-		IConfiguration configuration)
+		IConfiguration configuration,
+		ILogger<PaymentSucceededConsumer> logger)
 	{
 		_userGameRepository = userGameRepository;
 		_elasticsearchClient = elasticsearchClient;
 		_applicationUserService = applicationUserService;
 		_configuration = configuration;
+		_logger = logger;
 	}
 
 	public async Task Consume(ConsumeContext<PaymentSucceededEvent> context)
 	{
+		_logger.LogInformation("Consuming PaymentSucceededEvent for UserId: {UserId}, GameId: {GameId}",
+			context.Message.UserId, context.Message.GameId);
+
 		var loggedUserId = _applicationUserService.GetUserId();
 		var msg = context.Message;
 
